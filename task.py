@@ -92,8 +92,10 @@ def jsonRemove(n):
                 data["tasks"].pop(i)
                 with open (targetFile, "w") as outfile:
                     json.dump(data, outfile)
+                updateMsg = "[-] Removed task id " + n
                 break
-        updateMsg = "[-] Removed task id " + n
+            else:
+                updateMsg = "[!] Unable to find task id " + n
     except ValueError:
         updateMsg = "[!] Please use the id of the task"
     taskList(targetFile)
