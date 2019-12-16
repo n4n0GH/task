@@ -58,7 +58,7 @@ def jsonWrite(n):
     # the search string will cause massive errors
     try:
         dueTime = re.search(r'in\s+(.+?)\s+day(s\b|\b)', n, re.M|re.I)
-        dueTemp = re.search(r'([0-9])', dueTime.group(), re.M|re.I)
+        dueTemp = re.search(r'(\d+)', dueTime.group(), re.M|re.I)
         task = n[:-(len(dueTime.group())+1)]
         data["tasks"].append({
             "id": idCounter,
@@ -117,7 +117,7 @@ def jsonRead(content):
                 print("Overdue\n")
             elif days < 1:
                 print("Due today\n")
-            elif days is 1:
+            elif days < 2:
                 print("Due in 1 day\n")
             else:
                 print(("Due in " + str(int(days)) + " days\n"))
@@ -148,6 +148,9 @@ def userInput():
         jsonRemove(choice[2:].strip())
     elif choice.startswith(":lvl"):
         settingsUpdate(choice[4:5])
+    elif choice == "":
+        updateMsg = "[?] Not sure what to do"
+        taskList(targetFile)
     else:
         jsonWrite(choice)
 
