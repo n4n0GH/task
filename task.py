@@ -101,7 +101,7 @@ def jsonRemove(n):
     taskList(targetFile)
 
 
-# read JSON file into memory
+# read JSON file into memory and print to stdout
 def jsonRead(content):
     global data
     global idCounter
@@ -110,6 +110,8 @@ def jsonRead(content):
         data = json.load(objects)
     if idCounter <= 1:
         idCounter = data["settings"][0]["idCounter"]
+    # this needs to sort o into lists for further displaying
+    # as grouped items according to due date
     for o in data["tasks"]:
         print(("[" + str(o["id"]) + "] " + o["task"]))
         try:
@@ -120,7 +122,7 @@ def jsonRead(content):
             elif days < 1:
                 print("Due today\n")
             elif days < 2:
-                print("Due in 1 day\n")
+                print("Due tomorrow\n")
             else:
                 print(("Due in " + str(int(days)) + " days\n"))
         except:
@@ -149,7 +151,7 @@ def userInput():
     elif choice.startswith(":d"):
         jsonRemove(choice[2:].strip())
     elif choice.startswith(":lvl"):
-        settingsUpdate(choice[4:5])
+        settingsUpdate(choice[1:4], choice[4:5])
     elif choice == "":
         updateMsg = "[?] Not sure what to do"
         taskList(targetFile)
@@ -158,7 +160,7 @@ def userInput():
 
 
 # update user settings
-def settingsUpdate(n):
+def settingsUpdate(m, n):
     global updateMsg
     updateMsg = "[+] View level at " + n
     taskList(targetFile)
