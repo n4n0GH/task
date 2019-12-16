@@ -39,7 +39,7 @@ def jsonCheck():
 # create JSON file and directory
 def jsonCreate():
     if not os.path.exists(targetDir):
-        os.mkdir(targetDir, 0755)
+        os.mkdir(targetDir, 0o755)
     data["settings"].append({
         "idCounter": idCounter,
         "lvl": 3
@@ -87,7 +87,7 @@ def jsonRemove(n):
     # we need to make sure that we're dealing with a number
     try:
         check = int(n)
-        for i in xrange(len(data["tasks"])):
+        for i in range(len(data["tasks"])):
             if data["tasks"][i]["id"] == check:
                 data["tasks"].pop(i)
                 with open (targetFile, "w") as outfile:
@@ -109,7 +109,7 @@ def jsonRead(content):
     if idCounter <= 1:
         idCounter = data["settings"][0]["idCounter"]
     for o in data["tasks"]:
-        print("[" + str(o["id"]) + "] " + o["task"])
+        print(("[" + str(o["id"]) + "] " + o["task"]))
         try:
             days = int(o["due"]) - timeGrab()
             days = days/24/60/60+1
@@ -120,7 +120,7 @@ def jsonRead(content):
             elif days is 1:
                 print("Due in 1 day\n")
             else:
-                print("Due in " + str(days) + " days\n")
+                print(("Due in " + str(int(days)) + " days\n"))
         except:
             print("Whenever you feel like it\n")
 
@@ -139,7 +139,7 @@ def taskList(tasks):
 def userInput():
     global updateMsg
     print("Type 'help' or '?' for more info")
-    choice = raw_input("> ").strip()
+    choice = input("> ").strip()
     if (choice.lower() == "help") or (choice == "?"):
         userHelp()
     elif (choice.lower() == "quit") or (choice.lower() == "exit"):
@@ -182,7 +182,7 @@ def userHelp():
         :d(id)    - Remove a task by ID
         help/?    - View this screen
         quit/exit - exit the application""")
-    raw_input("\nPress return to go back...")
+    input("\nPress return to go back...")
     taskList(targetFile)
 
 
