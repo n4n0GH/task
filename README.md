@@ -20,6 +20,7 @@ Uses trees as base resource | No | Yes
 Neighbors can find your notes in the trash | No | Yes
 Written in Snekspeak | Yes | No
 Requires a pen or pencil to use | No | Yes
+Can create dynamic groups of items according to due date without running out of paper | Yes | No
 
 ### isn't
 A planner for tasks and subtasks, categories, tags, or collaborative editing. It's not meant to replace more complex tools, but if you're looking for something that's a little prettier than simple text files, this is for you.
