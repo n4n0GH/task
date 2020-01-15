@@ -17,7 +17,7 @@ targetFile = targetDir + "/tasks.json"              # Construct full path
 data = {}                                           # JSON written to file
 data["tasks"] = []
 data["settings"] = []
-updateMsg = "[+] Loaded succesfully"                # Feedback messages
+message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
 
@@ -27,10 +27,18 @@ def timeGrab():
     return int(time.time())
 
 
+# update feedback messages
+def updateMsg(msgBody, msgType):
+    global message
+    hint = ["[!] ", "[?] ", "[×] ", "[+] ", "[✓] "]
+    message = hint[msgType] + msgBody
+
+
 # check if JSON exists, execute creation if not
 def jsonCheck():
     try:
         f = open(targetFile)
+        updateMsg("File loaded", 4)
         taskList(targetFile)
     except:
         jsonCreate()
@@ -46,12 +54,12 @@ def jsonCreate():
     })
     with open(targetFile, "w") as taskfile:
         json.dump(data, taskfile)
+    updateMsg("New file storage created", 3)
     taskList(targetFile)
 
 
 # write new content to JSON file
 def jsonWrite(n):
-    global updateMsg
     global data
     global idCounter
     # it's important to 'try' otherwise entries that don't end in
@@ -76,7 +84,7 @@ def jsonWrite(n):
         })
     idCounter += 1
     data["settings"][0]["idCounter"] = idCounter
-    updateMsg = "[+] Added new task to list!"
+    updateMsg("Added new task to list", 3)
     with open(targetFile, "w") as outfile:
         json.dump(data, outfile)
     taskList(targetFile)
@@ -84,7 +92,6 @@ def jsonWrite(n):
 
 # remove item from JSON file
 def jsonRemove(n):
-    global updateMsg
     # we need to make sure that we're dealing with a number
     try:
         check = int(n)
@@ -93,12 +100,12 @@ def jsonRemove(n):
                 data["tasks"].pop(i)
                 with open(targetFile, "w") as outfile:
                     json.dump(data, outfile)
-                updateMsg = "[-] Removed task id " + n
+                updateMsg("Removed task id " + str(n), 2)
                 break
             else:
-                updateMsg = "[!] Unable to find task id " + n
+                updateMsg("Unable to find task id " + str(n), 0)
     except ValueError:
-        updateMsg = "[!] Please use the id of the task"
+        updateMsg("Please use the id of the task", 0)
     taskList(targetFile)
 
 
@@ -106,7 +113,6 @@ def jsonRemove(n):
 def jsonRead(content):
     global data
     global idCounter
-    global updateMsg
     group = {}
     gkey = ""
     gval = ""
@@ -168,14 +174,13 @@ def taskList(tasks):
     clearScreen()
     jsonRead(tasks)
     stdout.write("\x1b]2;" + appName + "\x07")
-    if not updateMsg == "":
-        print(updateMsg)
+    if not message == "":
+        print(message)
     userInput()
 
 
 # await user input and add or remove tasks
 def userInput():
-    global updateMsg
     print("Type ':help' or ':?' for more info")
     choice = input("> ").strip()
     if choice in (":help", ":?", ":h"):
@@ -190,10 +195,10 @@ def userInput():
         settingsUpdate(1, choice[4:5])
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
-        updateMsg = "[?] Did you want to quit?"
+        updateMsg("Did you want to quit?", 1)
         taskList(targetFile)
     elif choice == "":
-        updateMsg = "[?] Not sure what to do"
+        updateMsg("Not sure what to do", 1)
         taskList(targetFile)
     else:
         jsonWrite(choice)
@@ -201,16 +206,15 @@ def userInput():
 
 # update user settings
 def settingsUpdate(m, n):
-    global updateMsg
     global data
     if m == 1:
         # change items shown depending on view level
-        updateMsg = "[+] View level at " + n
+        updateMsg("View level at " + n, 3)
     elif m == 2:
         # grab the last used id inside the JSON
         # and set counter to that +1
         # best to do this during init of program
-        updateMsg = "[+] Counter reset"
+        updateMsg("Counter reset", 3)
     taskList(targetFile)
 
 
