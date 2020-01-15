@@ -11,13 +11,13 @@ from sys import exit as byebye
 # global variables for reuse
 appName = "Task"                                    # Name of the application
 dirName = "hello-task"                              # Directory name
-homeDir = os.path.expanduser("~")                   # Use home as base
+homeDir = os.path.expanduser("~")                   # Use user's home as base
 targetDir = homeDir + "/.local/share/" + dirName    # Determine target directory
 targetFile = targetDir + "/tasks.json"              # Construct full path
 data = {}                                           # JSON written to file
 data["tasks"] = []
 data["settings"] = []
-updateMsg = ""                                      # Feedback messages
+updateMsg = "[+] Loaded succesfully"                # Feedback messages
 idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
 
@@ -91,7 +91,7 @@ def jsonRemove(n):
         for i in range(len(data["tasks"])):
             if data["tasks"][i]["id"] == check:
                 data["tasks"].pop(i)
-                with open (targetFile, "w") as outfile:
+                with open(targetFile, "w") as outfile:
                     json.dump(data, outfile)
                 updateMsg = "[-] Removed task id " + n
                 break
@@ -117,56 +117,53 @@ def jsonRead(content):
         idCounter = data["settings"][0]["idCounter"]
     # let's get things sorted
     for o in data["tasks"]:
-        # try if it's possible to grab the due key and assign o to a group
+        # try if it's possible to grab the due value and assign o to a group
         try:
             days = int(o["due"]) - timeGrab()
             days = days/24/60/60+1
             if days < 0:
-                gid = 1
-                gkey = "overdue"
-                gval = "Expired"
+                gkey = 2
+                gval = "[ Overdue ]"
                 glvl = 3
             elif days < 1:
-                gid = 3
-                gkey = "today"
-                gval = "Due today"
+                gkey = 3
+                gval = "[ Today ]"
                 glvl = 1
             elif days < 2:
-                gid = 4
-                gkey = "tomorrow"
-                gval = "Due tomorrow"
+                gkey = 4
+                gval = "[ Tomorrow ]"
                 glvl = 1
             else:
-                gid = 5
-                gkey = str(int(days))
-                gval = "Due in " + gkey + " days"
-                glvl = 3  
+                gkey = int(days + 4)
+                gval = "[ In " + str(int(days)) + " days ]"
+                glvl = 3
         # if there's no timestamp to use, put o into the "whenever" group
-        except:
-            gid = 2
-            gkey = "whenever"
-            gval = "Whenever you feel like it"
+        except BaseException:
+            gkey = 1
+            gval = "[ Unscheduled ]"
             glvl = 2
+            pass
         # create groups dynamically based on the existence of keys
         if gkey not in group:
-            group[gkey] = []
-            group[gkey].append({
-                "gid": gid,
+            group[gkey] = [{
                 "due": gval,
                 "lvl": glvl,
                 "item": []
-            })
+                }]
         # add tasks to their group keys
         group[gkey][0]["item"].append(str(o["id"]) + ": " + str(o["task"]))
     # and finally print everything to the terminal
-    for (k, v) in group.items():
-        for o in v:
-            print(o["due"])
-            for t in o["item"]:
-                print(t)
+    # since the sortKey is useless to us, we're only interested in the dueGroups
+    # for the output, we still need to query sortKey to get proper sorting
+    for (sortKey, dueGroups) in sorted(group.items()):
+        for dueGroup in dueGroups:
+            print(dueGroup["due"])
+            for task in dueGroup["item"]:
+                print(task)
             print("")
 
-# display JSON content as task list 
+
+# display JSON content as task list
 def taskList(tasks):
     clearScreen()
     jsonRead(tasks)
@@ -181,16 +178,20 @@ def userInput():
     global updateMsg
     print("Type ':help' or ':?' for more info")
     choice = input("> ").strip()
-    if (choice == ":help") or (choice == ":?"):
+    if choice in (":help", ":?", ":h"):
         userHelp()
-    elif choice == ":reset":
+    elif choice in (":reset", ":r"):
         settingsUpdate(2, "foo")
-    elif (choice == ":quit") or (choice == ":exit"):
+    elif choice in (":exit", ":quit", ":q", ":e"):
         byebye
     elif choice.startswith(":d"):
         jsonRemove(choice[2:].strip())
     elif choice.startswith(":lvl"):
         settingsUpdate(1, choice[4:5])
+    # catch user input error to prevent creation of unneccesary tasks
+    elif choice.lower() in ("quit", "exit"):
+        updateMsg = "[?] Did you want to quit?"
+        taskList(targetFile)
     elif choice == "":
         updateMsg = "[?] Not sure what to do"
         taskList(targetFile)
@@ -201,12 +202,14 @@ def userInput():
 # update user settings
 def settingsUpdate(m, n):
     global updateMsg
+    global data
     if m == 1:
         # change items shown depending on view level
         updateMsg = "[+] View level at " + n
     elif m == 2:
         # grab the last used id inside the JSON
         # and set counter to that +1
+        # best to do this during init of program
         updateMsg = "[+] Counter reset"
     taskList(targetFile)
 
@@ -215,13 +218,13 @@ def settingsUpdate(m, n):
 def userHelp():
     clearScreen()
     print("""
-   I8                         ,dPYb,    
-   I8                         IP'`Yb    
-88888888                      I8  8I    
-   I8                         I8  8bgg, 
-   I8     ,gggg,gg    ,g,     I8 dP" "8 
-   I8    dP"  "Y8I   ,8'8,    I8d8bggP" 
-  ,I8,  i8'    ,8I  ,8'  Yb   I8P' "Yb, 
+   I8                         ,dPYb,
+   I8                         IP'`Yb
+88888888                      I8  8I
+   I8                         I8  8bgg,
+   I8     ,gggg,gg    ,g,     I8 dP" "8
+   I8    dP"  "Y8I   ,8'8,    I8d8bggP"
+  ,I8,  i8'    ,8I  ,8'  Yb   I8P' "Yb,
  ,d88b,,d8,   ,d8b,,8'_   8) ,d8    `Yb,
  8P""Y8P"Y8888P"`Y8P' "YY8P8P88P      Y8
     """)
@@ -230,7 +233,7 @@ def userHelp():
     print("Task understands you. By using a natural suffix like 'in 3 days', Task will automatically create a timestamp and sort the added task according to it's due date.")
     print("Once a task is finished, you can use it's id and delete it by typing ':d id' where 'id' would be the number displayed with the task.")
     print("""\nAvailable commands are:
-        
+
         :d(id)        - Remove a task by ID
         :help, :?     - View this screen
         :quit, :exit  - exit the application""")
@@ -243,5 +246,6 @@ def clearScreen():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-# execute program
-jsonCheck()
+# execute program only if not imported as module
+if __name__ == "__main__":
+    jsonCheck()
