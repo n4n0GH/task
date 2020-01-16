@@ -5,6 +5,7 @@ import os
 import re
 import json
 import time
+import argparse
 from sys import stdout
 from sys import exit as byebye
 
@@ -22,9 +23,32 @@ idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
 
 
+#set up terminal help
+parser = argparse.ArgumentParser(description="""
+                                 Task is a todo list application that allows you
+                                 to quickly create task lists by typing them
+                                 without any additional frizz. Write anything
+                                 into the input field and see it added as a new
+                                 item on your list.\n
+                                 Task understands you. By using a natural suffix
+                                 like 'in 3 days' it will automatically create a
+                                 timestamp and sort the added task according to
+                                 it's due date.\n
+                                 Once a task is finished, you can use it's id
+                                 and delete it by typing ':d id' where 'id' is
+                                 the number displayed with the task.\n
+                                 """)
+args = parser.parse_args()
+
+
 # function is used by read and write functions
 def timeGrab():
     return int(time.time())
+
+
+# clear screen buffer
+def clearScreen():
+    os.system("cls" if os.name == "nt" else "clear")
 
 
 # update feedback messages
@@ -54,7 +78,7 @@ def jsonCreate():
     })
     with open(targetFile, "w") as taskfile:
         json.dump(data, taskfile)
-    updateMsg("New file storage created", 3)
+    updateMsg("New file storage created", 4)
     taskList(targetFile)
 
 
@@ -209,7 +233,7 @@ def settingsUpdate(m, n):
     global data
     if m == 1:
         # change items shown depending on view level
-        updateMsg("View level at " + n, 3)
+        updateMsg("View level at " + str(n), 3)
     elif m == 2:
         # grab the last used id inside the JSON
         # and set counter to that +1
@@ -238,16 +262,11 @@ def userHelp():
     print("Once a task is finished, you can use it's id and delete it by typing ':d id' where 'id' would be the number displayed with the task.")
     print("""\nAvailable commands are:
 
-        :d(id)        - Remove a task by ID
+        :d (id)       - Remove a task by ID
         :help, :?     - View this screen
         :quit, :exit  - exit the application""")
     input("\nPress return to go back...")
     taskList(targetFile)
-
-
-# clear screen buffer
-def clearScreen():
-    os.system("cls" if os.name == "nt" else "clear")
 
 
 # execute program only if not imported as module
