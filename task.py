@@ -23,7 +23,7 @@ idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
 
 
-#set up terminal help
+#set up terminal help text
 parser = argparse.ArgumentParser(description="""
                                  Task is a todo list application that allows you
                                  to quickly create task lists by typing them
@@ -41,6 +41,16 @@ parser = argparse.ArgumentParser(description="""
 args = parser.parse_args()
 
 
+# set up classes for easier color coding
+class color:
+    black = "\033[30m"
+    red = "\033[31m"
+    green = "\033[32m"
+    yellow = "\033[33m"
+    white = "\033[37m"
+    reset = "\033[0m"
+
+
 # function is used by read and write functions
 def timeGrab():
     return int(time.time())
@@ -54,8 +64,12 @@ def clearScreen():
 # update feedback messages
 def updateMsg(msgBody, msgType):
     global message
-    hint = ["[!] ", "[?] ", "[×] ", "[+] ", "[✓] "]
-    message = hint[msgType] + msgBody
+    hint = [color.yellow + "[!] ", 
+            color.yellow + "[?] ", 
+            color.red + "[×] ", 
+            color.green + "[+] ", 
+            color.green + "[✓] "]
+    message = hint[msgType] + msgBody + color.reset
 
 
 # check if JSON exists, execute creation if not
@@ -153,15 +167,15 @@ def jsonRead(content):
             days = days/24/60/60+1
             if days < 0:
                 gkey = 2
-                gval = "[ Overdue ]"
+                gval = color.red + "[ Overdue ]" + color.reset
                 glvl = 3
             elif days < 1:
                 gkey = 3
-                gval = "[ Today ]"
+                gval = color.yellow + "[ Today ]" + color.reset
                 glvl = 1
             elif days < 2:
                 gkey = 4
-                gval = "[ Tomorrow ]"
+                gval = color.green + "[ Tomorrow ]" + color.reset
                 glvl = 1
             else:
                 gkey = int(days + 4)
