@@ -300,6 +300,7 @@ def userHelp():
     print("""\nAvailable commands are:
 
         :d (id)       - Remove a task by ID
+        :lvl (1-4)    - Viewing level of tasks
         :help, :?     - View this screen
         :quit, :exit  - exit the application""")
     input("\nPress return to go back...")
