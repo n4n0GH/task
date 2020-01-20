@@ -21,6 +21,7 @@ data["settings"] = []
 message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
+size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
 
 
 #set up terminal help text
@@ -43,12 +44,22 @@ args = parser.parse_args()
 
 # set up classes for easier color coding
 class color:
-    black = "\033[30m"
-    red = "\033[31m"
-    green = "\033[32m"
-    yellow = "\033[33m"
-    white = "\033[37m"
-    reset = "\033[0m"
+    black = "\033[30m"          # used when also supplying a background
+    red = "\033[31m"            # used for urgent or deletion
+    green = "\033[32m"          # used for additions or confirmations
+    yellow = "\033[33m"         # used for program questions and semi-urgent
+    white = "\033[37m"          # used when also supplying a background
+    reset = "\033[0m"           # resets all color, reverts to default printing
+
+
+class bgcolor:
+    red = "\033[41m"
+
+
+class style:
+    bold = "\033[1m"
+    underline = "\033[4m"
+    reverse = "\033[7m"
 
 
 # function is used by read and write functions
@@ -59,6 +70,11 @@ def timeGrab():
 # clear screen buffer
 def clearScreen():
     os.system("cls" if os.name == "nt" else "clear")
+
+
+# fancy lines
+def titleLine(message, seperator):
+    return print(message.center(int(size[1]), seperator))
 
 
 # update feedback messages
@@ -167,24 +183,24 @@ def jsonRead(content):
             days = days/24/60/60+1
             if days < 0:
                 gkey = 2
-                gval = color.red + "[ Overdue ]" + color.reset
+                gval = style.bold + color.red + "[ Overdue ]"
                 glvl = 3
             elif days < 1:
                 gkey = 3
-                gval = color.yellow + "[ Today ]" + color.reset
+                gval = color.red + "[ Today ]"
                 glvl = 1
             elif days < 2:
                 gkey = 4
-                gval = color.green + "[ Tomorrow ]" + color.reset
+                gval = color.yellow + "[ Tomorrow ]"
                 glvl = 1
             else:
                 gkey = int(days + 4)
                 gval = "[ In " + str(int(days)) + " days ]"
-                glvl = 3
+                glvl = 4
         # if there's no timestamp to use, put o into the "whenever" group
         except BaseException:
             gkey = 1
-            gval = "[ Unscheduled ]"
+            gval = color.white + "[ Unscheduled ]"
             glvl = 2
             pass
         # create groups dynamically based on the existence of keys
@@ -201,10 +217,11 @@ def jsonRead(content):
     # for the output, we still need to query sortKey to get proper sorting
     for (sortKey, dueGroups) in sorted(group.items()):
         for dueGroup in dueGroups:
-            print(dueGroup["due"])
-            for task in dueGroup["item"]:
-                print(task)
-            print("")
+            if dueGroup["lvl"] <= data["settings"][0]["lvl"]:
+                print(style.reverse + dueGroup["due"] + color.reset)
+                for task in dueGroup["item"]:
+                    print(task)
+                print("")
 
 
 # display JSON content as task list
@@ -230,7 +247,7 @@ def userInput():
     elif choice.startswith(":d"):
         jsonRemove(choice[2:].strip())
     elif choice.startswith(":lvl"):
-        settingsUpdate(1, choice[4:5])
+        settingsUpdate(1, choice[4:].strip())
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -247,12 +264,18 @@ def settingsUpdate(m, n):
     global data
     if m == 1:
         # change items shown depending on view level
-        updateMsg("View level at " + str(n), 3)
+        if int(n) in range(1, 5):
+            data["settings"][0]["lvl"] = int(n)
+            updateMsg("View level at " + n, 3)
+        else:
+            updateMsg("Please use a value between 1 and 4", 2)
     elif m == 2:
         # grab the last used id inside the JSON
         # and set counter to that +1
         # best to do this during init of program
         updateMsg("Counter reset", 3)
+    with open(targetFile, "w") as outfile:
+        json.dump(data, outfile)
     taskList(targetFile)
 
 
