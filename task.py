@@ -9,22 +9,8 @@ import argparse
 from sys import stdout
 from sys import exit as byebye
 
-# global variables for reuse
-appName = "Task"                                    # Name of the application
-dirName = "hello-task"                              # Directory name
-homeDir = os.path.expanduser("~")                   # Use user's home as base
-targetDir = homeDir + "/.local/share/" + dirName    # Determine target directory
-targetFile = targetDir + "/tasks.json"              # Construct full path
-data = {}                                           # JSON written to file
-data["tasks"] = []
-data["settings"] = []
-message = ""                                        # Feedback messages
-idCounter = 1                                       # Used to generate task id
-unixDay = 86400                                     # Used to generate timestamp
-size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
 
-
-#set up terminal help text
+#set up terminal help text and argparse
 parser = argparse.ArgumentParser(description="""
                                  Task is a todo list application that allows you
                                  to quickly create task lists by typing them
@@ -39,7 +25,29 @@ parser = argparse.ArgumentParser(description="""
                                  and delete it by typing ':d id' where 'id' is
                                  the number displayed with the task.\n
                                  """)
+parser.add_argument("-f", "--file",
+                    help="specify an alternative filename to use as default",
+                    metavar="(NAME)")
 args = parser.parse_args()
+
+
+# global variables for reuse
+if args.file:                                       # Enables user to select a
+    fileName = args.file + ".json"                  # different file to store
+else:                                               # the tasks in
+    fileName = "tasks.json"
+appName = "Task"                                    # Name of the application
+dirName = "hello-task"                              # Directory name
+homeDir = os.path.expanduser("~")                   # Use user's home as base
+targetDir = homeDir + "/.local/share/" + dirName    # Determine target directory
+targetFile = targetDir + "/" + fileName             # Construct full path
+data = {}                                           # JSON written to file
+data["tasks"] = []
+data["settings"] = []
+message = ""                                        # Feedback messages
+idCounter = 1                                       # Used to generate task id
+unixDay = 86400                                     # Used to generate timestamp
+size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
 
 
 # set up classes for easier color coding
@@ -80,12 +88,12 @@ def titleLine(message, seperator):
 # update feedback messages
 def updateMsg(msgBody, msgType):
     global message
-    hint = [color.yellow + "[!] ", 
-            color.yellow + "[?] ", 
-            color.red + "[×] ", 
-            color.green + "[+] ", 
-            color.green + "[✓] "]
-    message = hint[msgType] + msgBody + color.reset
+    hint = [color.yellow + " [!] ", 
+            color.yellow + " [?] ", 
+            color.red + " [×] ", 
+            color.green + " [+] ", 
+            color.green + " [✓] "]
+    message = hint[msgType] + msgBody + " " + color.reset
 
 
 # check if JSON exists, execute creation if not
@@ -146,12 +154,20 @@ def jsonWrite(n):
 
 # remove item from JSON file
 def jsonRemove(n):
+    global idCounter
     # we need to make sure that we're dealing with a number
     try:
         check = int(n)
         for i in range(len(data["tasks"])):
             if data["tasks"][i]["id"] == check:
                 data["tasks"].pop(i)
+                # clean up idCounter to next lowest free id
+                if len(data["tasks"]) >= 1:
+                    data["settings"][0]["idCounter"] = data["tasks"][-1]["id"]+1
+                    idCounter = data["tasks"][-1]["id"]+1
+                else:
+                    data["settings"][0]["idCounter"] = 1
+                    idCounter = 1
                 with open(targetFile, "w") as outfile:
                     json.dump(data, outfile)
                 updateMsg("Removed task id " + str(n), 2)
@@ -217,6 +233,7 @@ def jsonRead(content):
     # for the output, we still need to query sortKey to get proper sorting
     for (sortKey, dueGroups) in sorted(group.items()):
         for dueGroup in dueGroups:
+            # print only the dueGroup that matches current view level settings
             if dueGroup["lvl"] <= data["settings"][0]["lvl"]:
                 print(style.reverse + dueGroup["due"] + color.reset)
                 for task in dueGroup["item"]:
@@ -230,24 +247,24 @@ def taskList(tasks):
     jsonRead(tasks)
     stdout.write("\x1b]2;" + appName + "\x07")
     if not message == "":
-        print(message)
+        print(style.reverse + color.black + " NORMAL " + color.white + " " +
+              fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +
+              str(data["settings"][0]["lvl"]) + " " + message)
     userInput()
 
 
 # await user input and add or remove tasks
 def userInput():
-    print("Type ':help' or ':?' for more info")
+    # print("Type ':help' or ':?' for more info")
     choice = input("> ").strip()
     if choice in (":help", ":?", ":h"):
         userHelp()
-    elif choice in (":reset", ":r"):
-        settingsUpdate(2, "foo")
     elif choice in (":exit", ":quit", ":q", ":e"):
         byebye
     elif choice.startswith(":d"):
         jsonRemove(choice[2:].strip())
-    elif choice.startswith(":lvl"):
-        settingsUpdate(1, choice[4:].strip())
+    elif choice.startswith(":f"):
+        foresight(choice[2:].strip())
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -259,51 +276,38 @@ def userInput():
         jsonWrite(choice)
 
 
-# update user settings
-def settingsUpdate(m, n):
+# update foresight
+def foresight(n):
     global data
-    if m == 1:
-        # change items shown depending on view level
-        if int(n) in range(1, 5):
-            data["settings"][0]["lvl"] = int(n)
-            updateMsg("View level at " + n, 3)
+    global idCounter
+    try:
+        lvl = int(n)
+        if int(lvl) in range(1, 5):
+            data["settings"][0]["lvl"] = int(lvl)
+            updateMsg("Foresight set to " + str(lvl), 4)
         else:
-            updateMsg("Please use a value between 1 and 4", 2)
-    elif m == 2:
-        # grab the last used id inside the JSON
-        # and set counter to that +1
-        # best to do this during init of program
-        updateMsg("Counter reset", 3)
-    with open(targetFile, "w") as outfile:
-        json.dump(data, outfile)
+            raise
+        with open(targetFile, "w") as outfile:
+            json.dump(data, outfile)
+    except:
+        updateMsg("Please use a value between 1 and 4", 2)
     taskList(targetFile)
 
 
 # short help print
 def userHelp():
     clearScreen()
-    print("""
-   I8                         ,dPYb,
-   I8                         IP'`Yb
-88888888                      I8  8I
-   I8                         I8  8bgg,
-   I8     ,gggg,gg    ,g,     I8 dP" "8
-   I8    dP"  "Y8I   ,8'8,    I8d8bggP"
-  ,I8,  i8'    ,8I  ,8'  Yb   I8P' "Yb,
- ,d88b,,d8,   ,d8b,,8'_   8) ,d8    `Yb,
- 8P""Y8P"Y8888P"`Y8P' "YY8P8P88P      Y8
-    """)
-    print("A todo list application\n")
-    print("Task allows you to quickly create to-do lists by typing them without any additional frizz. Write anything into the input field and see it added as a new item.")
-    print("Task understands you. By using a natural suffix like 'in 3 days', Task will automatically create a timestamp and sort the added task according to it's due date.")
-    print("Once a task is finished, you can use it's id and delete it by typing ':d id' where 'id' would be the number displayed with the task.")
-    print("""\nAvailable commands are:
+    print("""Available commands are:
 
         :d (id)       - Remove a task by ID
-        :lvl (1-4)    - Viewing level of tasks
+        :f (1-4)      - Viewing level of tasks
         :help, :?     - View this screen
-        :quit, :exit  - exit the application""")
-    input("\nPress return to go back...")
+        :quit, :exit  - exit the application
+        """)
+    print(style.reverse + color.yellow + " HELP " + color.white + " " +
+          fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +
+          str(data["settings"][0]["lvl"]) + " " + message)
+    input("> Press return to go back...")
     taskList(targetFile)
 
 
