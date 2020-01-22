@@ -56,7 +56,8 @@ def jsonRead(content):
                 group = group + "\n" + o["task"]
         except BaseException:
             pass
-    subprocess.call(['notify-send', "Due Today", group])
+    if group is not "":
+        subprocess.call(['notify-send', "Due Today", group])
 
 
 jsonRead(targetFile)
