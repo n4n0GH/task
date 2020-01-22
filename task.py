@@ -96,6 +96,21 @@ def updateMsg(msgBody, msgType):
     message = hint[msgType] + msgBody + " " + color.reset
 
 
+# set different mode
+def mode(m):
+    modes = [color.black + " NORMAL ",
+             color.yellow + " HELP ",
+             color.red + " DELETION "]
+    return modes[m]
+
+
+# render the modeline
+def modeline(v):
+    output = style.reverse + mode(v) + color.white + " " +\
+             fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +\
+             str(data["settings"][0]["lvl"]) + " " + message
+    return print(output)
+
 # check if JSON exists, execute creation if not
 def jsonCheck():
     try:
@@ -227,7 +242,7 @@ def jsonRead(content):
                 "item": []
                 }]
         # add tasks to their group keys
-        group[gkey][0]["item"].append(str(o["id"]) + ": " + str(o["task"]))
+        group[gkey][0]["item"].append("#" + str(o["id"]) + " " + str(o["task"]))
     # and finally print everything to the terminal
     # since the sortKey is useless to us, we're only interested in the dueGroups
     # for the output, we still need to query sortKey to get proper sorting
@@ -246,10 +261,7 @@ def taskList(tasks):
     clearScreen()
     jsonRead(tasks)
     stdout.write("\x1b]2;" + appName + "\x07")
-    if not message == "":
-        print(style.reverse + color.black + " NORMAL " + color.white + " " +
-              fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +
-              str(data["settings"][0]["lvl"]) + " " + message)
+    modeline(0)   
     userInput()
 
 
@@ -304,9 +316,7 @@ def userHelp():
         :help, :?     - View this screen
         :quit, :exit  - exit the application
         """)
-    print(style.reverse + color.yellow + " HELP " + color.white + " " +
-          fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +
-          str(data["settings"][0]["lvl"]) + " " + message)
+    modeline(1)
     input("> Press return to go back...")
     taskList(targetFile)
 
