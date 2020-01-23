@@ -52,7 +52,7 @@ def jsonRead(content):
         try:
             days = int(item["due"]) - timegrab()
             days = int(days/24/60/60+1)
-            if days < 1:
+            if days <= 1 and days > 0:
                 group = group + "\n" + item["task"]
         except BaseException:
             pass

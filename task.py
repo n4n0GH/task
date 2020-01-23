@@ -93,7 +93,7 @@ def updateMsg(msgBody, msgType):
             color.red + " [×] ", 
             color.green + " [+] ", 
             color.green + " [✓] "]
-    message = hint[msgType] + msgBody + " " + color.reset
+    message = hint[msgType] + msgBody + " "
 
 
 # set different mode
@@ -106,13 +106,24 @@ def mode(m):
 
 # render the modeline
 def modeline(v):
+    escLength = 19
+    global fileName
+    # filename needs to be truncated if tty size is small
+    fileName = (fileName[:7] + "...")\
+                if int(size[1]) < 51 and len(fileName) > 10\
+                else fileName
     left = mode(v) + color.white + " " + fileName
     right = " #" + str(idCounter-1) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
-    # calculate padding and add 24 to account for escape sequence color codes
-    padding = int(size[1]) - len(right) - len(left) + 19
+    # calculate padding and add 19 to account for escape sequence color codes
+    padding = int(size[1]) - len(right) - len(left) + escLength
     output = style.reverse + left + " " * padding + right
-    return print(output)
+    #return print(output + color.reset)
+    if (len(output) - escLength) > int(size[1]):
+        overflow = len(output) - escLength - int(size[1]) + 4
+        return print(output[:-overflow] + "... " + color.reset)
+    else:
+        return print(output + color.reset)
 
 # check if JSON exists, execute creation if not
 def jsonCheck():
@@ -164,7 +175,7 @@ def jsonWrite(n):
         })
     idCounter += 1
     data["settings"][0]["idCounter"] = idCounter
-    updateMsg("Added new task to list", 3)
+    updateMsg("New task added", 3)
     with open(targetFile, "w") as outfile:
         json.dump(data, outfile)
     taskList(targetFile)
@@ -264,7 +275,7 @@ def taskList(tasks):
     clearScreen()
     jsonRead(tasks)
     stdout.write("\x1b]2;" + appName + "\x07")
-    modeline(0)   
+    modeline(0)
     userInput()
 
 
