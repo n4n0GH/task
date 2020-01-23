@@ -48,12 +48,12 @@ def jsonRead(content):
         data = json.load(objects)
     if idCounter <= 1:
         idCounter = data["settings"][0]["idCounter"]
-    for o in data["tasks"]:
+    for item in data["tasks"]:
         try:
-            days = int(o["due"]) - timegrab()
+            days = int(item["due"]) - timegrab()
             days = int(days/24/60/60+1)
             if days < 1:
-                group = group + "\n" + o["task"]
+                group = group + "\n" + item["task"]
         except BaseException:
             pass
     if group is not "":

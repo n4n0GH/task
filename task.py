@@ -106,9 +106,12 @@ def mode(m):
 
 # render the modeline
 def modeline(v):
-    output = style.reverse + mode(v) + color.white + " " +\
-             fileName + " " + color.yellow + " #" + str(idCounter-1) + " ~" +\
-             str(data["settings"][0]["lvl"]) + " " + message
+    left = mode(v) + color.white + " " + fileName
+    right = " #" + str(idCounter-1) + " ~" +\
+            str(data["settings"][0]["lvl"]) + " " + message
+    # calculate padding and add 24 to account for escape sequence color codes
+    padding = int(size[1]) - len(right) - len(left) + 19
+    output = style.reverse + left + " " * padding + right
     return print(output)
 
 # check if JSON exists, execute creation if not
