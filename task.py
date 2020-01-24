@@ -109,13 +109,12 @@ def modeline(v):
     escLength = 19
     global fileName
     # filename needs to be truncated if tty size is small
-    fileName = (fileName[:7] + "...")\
-                if int(size[1]) < 51 and len(fileName) > 10\
-                else fileName
+    if int(size[1]) < 51 and len(fileName) > 10:
+        fileName = fileName[:7] + "..."
     left = mode(v) + color.white + " " + fileName
     right = " #" + str(idCounter-1) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
-    # calculate padding and add 19 to account for escape sequence color codes
+    # calculate padding and account for escape sequence color codes
     padding = int(size[1]) - len(right) - len(left) + escLength
     output = style.reverse + left + " " * padding + right
     #return print(output + color.reset)
