@@ -6,6 +6,7 @@ import re
 import json
 import time
 import argparse
+import readline
 from sys import stdout
 from sys import exit as byebye
 
@@ -47,8 +48,6 @@ data["settings"] = []
 message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
-size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
-
 
 # set up classes for easier color coding
 class color:
@@ -56,11 +55,14 @@ class color:
     red = "\033[31m"            # used for urgent or deletion
     green = "\033[32m"          # used for additions or confirmations
     yellow = "\033[33m"         # used for program questions and semi-urgent
+    orange = "\033[214m"        # used to highlight projects
+    purple = "\033[128m"        # used to highlight contexts
     white = "\033[37m"          # used when also supplying a background
     reset = "\033[0m"           # resets all color, reverts to default printing
 
 
 class bgcolor:
+    black = "\033[40m"
     red = "\033[41m"
 
 
@@ -68,6 +70,10 @@ class style:
     bold = "\033[1m"
     underline = "\033[4m"
     reverse = "\033[7m"
+
+
+def strike(text):
+    return "\u0336".join(text) + "\u0336"
 
 
 # function is used by read and write functions
@@ -88,17 +94,17 @@ def titleLine(message, seperator):
 # update feedback messages
 def updateMsg(msgBody, msgType):
     global message
-    hint = [color.yellow + " [!] ", 
-            color.yellow + " [?] ", 
-            color.red + " [×] ", 
-            color.green + " [+] ", 
+    hint = [color.yellow + " [!] ",
+            color.yellow + " [?] ",
+            color.red + " [×] ",
+            color.green + " [+] ",
             color.green + " [✓] "]
     message = hint[msgType] + msgBody + " "
 
 
 # set different mode
 def mode(m):
-    modes = [color.black + " NORMAL ",
+    modes = [color.white + " NORMAL ",
              color.yellow + " HELP ",
              color.red + " DELETION "]
     return modes[m]
@@ -106,7 +112,12 @@ def mode(m):
 
 # render the modeline
 def modeline(v):
-    escLength = 19
+    # TODO this is horribly broken
+    # currently the margin between the filename and the "right" part is always
+    # calculated to take up too much space, truncating the action executed
+    # TODO make reflow work on terminals that support reflow by resize
+    size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
+    escLength = 36
     global fileName
     # filename needs to be truncated if tty size is small
     if int(size[1]) < 51 and len(fileName) > 10:
@@ -115,7 +126,7 @@ def modeline(v):
     right = " #" + str(idCounter-1) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
     # calculate padding and account for escape sequence color codes
-    padding = int(size[1]) - len(right) - len(left) + escLength
+    padding = int(size[1]) - len(right) - len(left) - len(message) + escLength
     output = style.reverse + left + " " * padding + right
     #return print(output + color.reset)
     if (len(output) - escLength) > int(size[1]):
@@ -155,6 +166,14 @@ def jsonWrite(n):
     # it's important to 'try' otherwise entries that don't end in
     # the search string will cause massive errors
     try:
+        context = re.findall(r'\B@\w+', n)
+    except:
+        context = ""
+    try:
+        project = re.findall(r'\B\+\w+', n)
+    except:
+        project = ""
+    try:
         dueTime = re.search(r'(in\s+(\d+?)\s+day(s\b|\b))$', n, re.M|re.I)
         dueTemp = re.search(r'(\d+)', dueTime.group(), re.M|re.I)
         task = n[:-(len(dueTime.group())+1)]
@@ -163,14 +182,20 @@ def jsonWrite(n):
             "task": task,
             # we need to reduce the due time by one second to prevent
             # the timer showing a wrong due date right after creation
-            "due": timeGrab()+(int(dueTemp.group())*unixDay-1)
+            "due": timeGrab()+(int(dueTemp.group())*unixDay-1),
+            "done": "false",
+            "context": context,
+            "project": project
         })
     # if there's no due date supplied, write the task to json without
     # the due key/value pair
     except:
         data["tasks"].append({
             "id": idCounter,
-            "task": n
+            "task": n,
+            "done": "false",
+            "context": context,
+            "project": project
         })
     idCounter += 1
     data["settings"][0]["idCounter"] = idCounter
@@ -183,27 +208,56 @@ def jsonWrite(n):
 # remove item from JSON file
 def jsonRemove(n):
     global idCounter
-    # we need to make sure that we're dealing with a number
-    try:
-        check = int(n)
-        for i in range(len(data["tasks"])):
-            if data["tasks"][i]["id"] == check:
-                data["tasks"].pop(i)
-                # clean up idCounter to next lowest free id
-                if len(data["tasks"]) >= 1:
-                    data["settings"][0]["idCounter"] = data["tasks"][-1]["id"]+1
-                    idCounter = data["tasks"][-1]["id"]+1
+    massRemove = n.split()
+    for j in range(len(massRemove)):
+        try:
+            check = int(massRemove[j])
+            for i in range(len(data["tasks"])):
+                if data["tasks"][i]["id"] == check:
+                    if data["tasks"][i]["done"] == "false":
+                        updateMsg("Unable to remove unfinished tasks", 0)
+                        break
+                    else:
+                        data["tasks"].pop(i)
+                        # clean up idCounter to next lowest free id
+                        if len(data["tasks"]) >= 1:
+                            data["settings"][0]["idCounter"] = data["tasks"][-1]["id"]+1
+                            idCounter = data["tasks"][-1]["id"]+1
+                        else:
+                            data["settings"][0]["idCounter"] = 1
+                            idCounter = 1
+                        with open(targetFile, "w") as outfile:
+                            json.dump(data, outfile)
+                        updateMsg("Removed task id " + str(check), 2)
+                        break
                 else:
-                    data["settings"][0]["idCounter"] = 1
-                    idCounter = 1
-                with open(targetFile, "w") as outfile:
-                    json.dump(data, outfile)
-                updateMsg("Removed task id " + str(n), 2)
-                break
-            else:
-                updateMsg("Unable to find task id " + str(n), 0)
-    except ValueError:
-        updateMsg("Please use the id of the task", 0)
+                    updateMsg("Unable to find task id " + str(check), 0)
+        except ValueError:
+            updateMsg("Please use the id of the task", 0)
+    taskList(targetFile)
+
+
+# toggle item's done state instead of directly removing it
+def doneToggle(n):
+    massToggle = n.split()
+    for j in range(len(massToggle)):
+        try:
+            check = int(massToggle[j])
+            for i in range(len(data["tasks"])):
+                if data["tasks"][i]["id"] == check:
+                    if data["tasks"][i]["done"] == "false":
+                        data["tasks"][i]["done"] = "true"
+                        updateMsg("Marked task as done", 4)
+                    else:
+                        data["tasks"][i]["done"] = "false"
+                        updateMsg("Marked task as not done", 4)
+                    with open(targetFile, "w") as outfile:
+                        json.dump(data, outfile)
+                    break
+                else:
+                    updateMsg("Unable to find task id " + str(check), 0)
+        except ValueError:
+            updateMsg("Please use the id of the task", 0)
     taskList(targetFile)
 
 
@@ -227,24 +281,24 @@ def jsonRead(content):
             days = days/24/60/60+1
             if days < 0:
                 gkey = 2
-                gval = style.bold + color.red + "[ Overdue ]"
+                gval = style.bold + color.red + "Overdue"
                 glvl = 3
             elif days < 1:
                 gkey = 3
-                gval = color.red + "[ Today ]"
+                gval = color.red + "Today"
                 glvl = 1
             elif days < 2:
                 gkey = 4
-                gval = color.yellow + "[ Tomorrow ]"
+                gval = color.yellow + "Tomorrow"
                 glvl = 1
             else:
                 gkey = int(days + 4)
-                gval = "[ In " + str(int(days)) + " days ]"
+                gval = "In " + str(int(days)) + " days"
                 glvl = 4
         # if there's no timestamp to use, put o into the "whenever" group
         except BaseException:
             gkey = 1
-            gval = color.white + "[ Unscheduled ]"
+            gval = color.white + "Unscheduled"
             glvl = 2
             pass
         # create groups dynamically based on the existence of keys
@@ -255,7 +309,14 @@ def jsonRead(content):
                 "item": []
                 }]
         # add tasks to their group keys
-        group[gkey][0]["item"].append("#" + str(o["id"]) + " " + str(o["task"]))
+        if str(o["done"]) == "false":
+            taskDescription = str(o["task"])
+            doneState = '   '
+        else:
+            taskDescription = strike(str(o["task"]))
+            doneState = color.green + ' ✓ ' + color.reset
+        idSpacing = (5 - len(str(o["id"]))) * " "
+        group[gkey][0]["item"].append(doneState + str(o["id"]) + idSpacing + taskDescription)
     # and finally print everything to the terminal
     # since the sortKey is useless to us, we're only interested in the dueGroups
     # for the output, we still need to query sortKey to get proper sorting
@@ -263,7 +324,7 @@ def jsonRead(content):
         for dueGroup in dueGroups:
             # print only the dueGroup that matches current view level settings
             if dueGroup["lvl"] <= data["settings"][0]["lvl"]:
-                print(style.reverse + dueGroup["due"] + color.reset)
+                print("   " + dueGroup["due"] + color.reset + "\n")
                 for task in dueGroup["item"]:
                     print(task)
                 print("")
@@ -287,9 +348,11 @@ def userInput():
     elif choice in (":exit", ":quit", ":q", ":e"):
         byebye
     elif choice.startswith(":d"):
-        jsonRemove(choice[2:].strip())
+        doneToggle(choice[2:].strip())
     elif choice.startswith(":f"):
         foresight(choice[2:].strip())
+    elif choice.startswith(":p"):
+        jsonRemove(choice[2:].strip())
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -324,7 +387,8 @@ def userHelp():
     clearScreen()
     print("""Available commands are:
 
-        :d (id)       - Remove a task by ID
+        :d (id)       - Mark a task id as done
+        :p (id)       - Permanently remove a task
         :f (1-4)      - Viewing level of tasks
         :help, :?     - View this screen
         :quit, :exit  - exit the application

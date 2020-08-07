@@ -3,7 +3,7 @@ Task allows you to quickly create to-do lists by typing them without any additio
 
 Write anything into the input field and see it added as a new item.
 
-![](task_preview.png?raw=true)
+![](task.png?raw=true)
 
 ## What this
 ### is
