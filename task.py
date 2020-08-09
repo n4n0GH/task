@@ -112,28 +112,29 @@ def mode(m):
 
 # render the modeline
 def modeline(v):
-    # TODO this is horribly broken
-    # currently the margin between the filename and the "right" part is always
-    # calculated to take up too much space, truncating the action executed
     # TODO make reflow work on terminals that support reflow by resize
-    size = os.popen('stty size', 'r').read().split()    # Determine width of TTY
-    escLength = 36
-    global fileName
-    # filename needs to be truncated if tty size is small
-    if int(size[1]) < 51 and len(fileName) > 10:
-        fileName = fileName[:7] + "..."
-    left = mode(v) + color.white + " " + fileName
+    size = os.popen('stty size', 'r').read().split()
+    escLength = 15
+    left = mode(v) + color.white + " "
     right = " #" + str(idCounter-1) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
     # calculate padding and account for escape sequence color codes
-    padding = int(size[1]) - len(right) - len(left) - len(message) + escLength
-    output = style.reverse + left + " " * padding + right
-    #return print(output + color.reset)
+    padding = int(size[1]) - len(left) - len(right) + escLength
+    output = left + " " * padding + right
     if (len(output) - escLength) > int(size[1]):
         overflow = len(output) - escLength - int(size[1]) + 4
-        return print(output[:-overflow] + "... " + color.reset)
+        return print(style.reverse + output[:-overflow] + "... " + color.reset)
     else:
-        return print(output + color.reset)
+        return print(style.reverse + output + color.reset)
+
+
+# render filename above task list
+def fileline():
+    global fileName
+    size = os.popen('stty size', 'r').read().split()
+    padding = int(size[1]) - len(fileName)
+    print(style.reverse + " " + fileName + " " * (padding - 1) + color.reset + "\n")
+
 
 # check if JSON exists, execute creation if not
 def jsonCheck():
@@ -333,6 +334,7 @@ def jsonRead(content):
 # display JSON content as task list
 def taskList(tasks):
     clearScreen()
+    fileline()
     jsonRead(tasks)
     stdout.write("\x1b]2;" + appName + "\x07")
     modeline(0)
@@ -378,21 +380,39 @@ def foresight(n):
         with open(targetFile, "w") as outfile:
             json.dump(data, outfile)
     except:
-        updateMsg("Please use a value between 1 and 4", 2)
+        clearScreen()
+        fileline()
+        print("""
+        Change amount of tasks to display
+
+   1    tasks due today and tomorrow
+   2    same as 1 plus unscheduled
+   3    same as 2 plus overdue
+   4    same as 3 plus tasks due days after
+""")
+        modeline(1)
+        foresightSelect = input("> ").strip()
+        try:
+            select = int(foresightSelect)
+            foresight(select)
+        except:
+            updateMsg("Please select a value between 1-4", 0)
     taskList(targetFile)
 
 
 # short help print
 def userHelp():
     clearScreen()
-    print("""Available commands are:
+    fileline()
+    print("""
+   Available commands are
 
-        :d (id)       - Mark a task id as done
-        :p (id)       - Permanently remove a task
-        :f (1-4)      - Viewing level of tasks
-        :help, :?     - View this screen
-        :quit, :exit  - exit the application
-        """)
+   :d (id)       Mark a task id as done
+   :p (id)       Permanently remove a task
+   :f (1-4)      Viewing level of tasks
+   :help, :?     View this screen
+   :quit, :exit  exit the application
+""")
     modeline(1)
     input("> Press return to go back...")
     taskList(targetFile)
