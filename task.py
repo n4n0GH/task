@@ -152,7 +152,7 @@ def jsonCreate():
         os.mkdir(targetDir, 0o755)
     data["settings"].append({
         "idCounter": idCounter,
-        "lvl": 3
+        "lvl": 4
     })
     with open(targetFile, "w") as taskfile:
         json.dump(data, taskfile)
@@ -382,8 +382,7 @@ def foresight(n):
     except:
         clearScreen()
         fileline()
-        print("""
-        Change amount of tasks to display
+        print("""   Change amount of tasks to display
 
    1    tasks due today and tomorrow
    2    same as 1 plus unscheduled
@@ -404,12 +403,11 @@ def foresight(n):
 def userHelp():
     clearScreen()
     fileline()
-    print("""
-   Available commands are
+    print("""   Available commands are
 
-   :d (id)       Mark a task id as done
-   :p (id)       Permanently remove a task
-   :f (1-4)      Viewing level of tasks
+   :d (id ...)   Mark a task id as done, seperate multiple tasks by space
+   :p (id ...)   Permanently remove a task, seperate multiple tasks by space
+   :f (1-4)      Viewing level of tasks, type :f to see further explanation
    :help, :?     View this screen
    :quit, :exit  exit the application
 """)
