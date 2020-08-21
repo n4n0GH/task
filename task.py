@@ -280,8 +280,10 @@ def jsonRead(content):
     glvl = 0
     with open(content) as objects:
         data = json.load(objects)
-    if idCounter <= 1:
+    if data["settings"][0]["idCounter"] > 1:
         idCounter = data["settings"][0]["idCounter"]
+    else:
+        idCounter = 1
     # let's get things sorted
     for o in data["tasks"]:
         # try if it's possible to grab the due value and assign o to a group
