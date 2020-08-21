@@ -111,7 +111,8 @@ def mode(m):
              color.yellow + " HELP ",
              color.red + " DELETION ",
              color.yellow + " FORESIGHT ",
-             color.yellow + " OPEN FILE "]
+             color.yellow + " OPEN FILE ",
+             color.yellow + " NEW FILE "]
     return modes[m]
 
 
@@ -367,6 +368,8 @@ def userInput():
         jsonRemove(choice[2:].strip())
     elif choice.startswith(":o"):
         fileswitcher()
+    elif choice.startswith(":n"):
+        newfile(choice[2:].strip())
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -440,6 +443,39 @@ def fileswitcher():
         fileswitcher()
 
 
+# create new file
+def newfile(file):
+    global targetFile
+    global fileName
+    global data
+    global idCounter
+    clearScreen()
+    fileline()
+    if len(file) < 1:
+        print("   Please specify a new filename\n")
+        modeline(5)
+        newFile = input(" > ").strip().split(" ")[0]
+        if len(newFile) > 0:
+            data = {}
+            data["tasks"] = []
+            data["settings"] = []
+            idCounter = 1
+            fileName = newFile + ".json"
+            targetFile = targetDir + "/" + fileName
+            jsonCheck(targetFile)
+        else:
+            updateMsg("Please specify a filename", 0)
+            taskList(targetFile)
+    elif len(file) >= 1:
+        data = {}
+        data["tasks"] = []
+        data["settings"] = []
+        idCounter = 1
+        fileName = file.strip().split(" ")[0] + ".json"
+        targetFile = targetDir + "/" + fileName
+        jsonCheck(targetFile)
+
+
 # short help print
 def userHelp():
     clearScreen()
@@ -450,6 +486,7 @@ def userHelp():
    :p (id ...)   Permanently remove a task, seperate multiple tasks by space
    :f (1-4)      Viewing level of tasks, type :f to see further explanation
    :o            Open another existing file
+   :n (name)     Creates a new file or opens existing one if filename exists
    :help, :?     View this screen
    :quit, :exit  exit the application
 """)
