@@ -50,6 +50,7 @@ data["settings"] = []
 message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
 unixDay = 86400                                     # Used to generate timestamp
+list = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
 
 # set up classes for easier color coding
 class color:
@@ -134,10 +135,13 @@ def modeline(v):
 
 # render filename above task list
 def fileline():
-    global fileName
+    if len(list) > 1:
+        indicator = " [+]"
+    else:
+        indicator = ""
     size = os.popen('stty size', 'r').read().split()
-    padding = int(size[1]) - len(fileName)
-    print(style.reverse + " " + fileName + " " * (padding - 1) + color.reset + "\n")
+    padding = int(size[1]) - len(fileName) - len(indicator)
+    print(style.reverse + " " + fileName + indicator + " " * (padding - 1) + color.reset + "\n")
 
 
 # check if JSON exists, execute creation if not
@@ -412,7 +416,6 @@ def fileswitcher():
     clearScreen()
     fileline()
     print("   Open available file\n")
-    list = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
     i = 0
     for singleFile in list:
         i = i + 1
