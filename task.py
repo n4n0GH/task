@@ -7,6 +7,8 @@ import json
 import time
 import argparse
 import readline
+from os import listdir
+from os.path import isfile, join
 from sys import stdout
 from sys import exit as byebye
 
@@ -106,7 +108,9 @@ def updateMsg(msgBody, msgType):
 def mode(m):
     modes = [color.white + " NORMAL ",
              color.yellow + " HELP ",
-             color.red + " DELETION "]
+             color.red + " DELETION ",
+             color.yellow + " FORESIGHT ",
+             color.yellow + " OPEN FILE "]
     return modes[m]
 
 
@@ -137,11 +141,11 @@ def fileline():
 
 
 # check if JSON exists, execute creation if not
-def jsonCheck():
+def jsonCheck(file):
     try:
-        f = open(targetFile)
+        f = open(file)
         updateMsg("File loaded", 4)
-        taskList(targetFile)
+        taskList(file)
     except:
         jsonCreate()
 
@@ -344,7 +348,7 @@ def taskList(tasks):
 # await user input and add or remove tasks
 def userInput():
     # print("Type ':help' or ':?' for more info")
-    choice = input("> ").strip()
+    choice = input(" > ").strip()
     if choice in (":help", ":?", ":h"):
         userHelp()
     elif choice in (":exit", ":quit", ":q", ":e"):
@@ -355,6 +359,8 @@ def userInput():
         foresight(choice[2:].strip())
     elif choice.startswith(":p"):
         jsonRemove(choice[2:].strip())
+    elif choice.startswith(":o"):
+        fileswitcher()
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -389,14 +395,44 @@ def foresight(n):
    3    same as 2 plus overdue
    4    same as 3 plus tasks due days after
 """)
-        modeline(1)
-        foresightSelect = input("> ").strip()
+        modeline(3)
+        foresightSelect = input(" > ").strip()
         try:
             select = int(foresightSelect)
             foresight(select)
         except:
             updateMsg("Please select a value between 1-4", 0)
     taskList(targetFile)
+
+
+# switch to other files
+def fileswitcher():
+    global targetFile
+    global fileName
+    clearScreen()
+    fileline()
+    print("   Open available file\n")
+    list = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
+    i = 0
+    for singleFile in list:
+        i = i + 1
+        print("   " + str(i) + "   " + singleFile)
+    print("\n   a   abort\n")
+    modeline(4)
+    fileSelect = input(" > ").strip()
+    if fileSelect.startswith("a"):
+        taskList(targetFile)
+    elif int(fileSelect):
+        selection = int(fileSelect) - 1
+        if selection <= len(list):
+            fileName = list[selection]
+            targetFile = targetDir + "/" + fileName
+            taskList(targetFile)
+        else:
+            raise
+    else:
+        updateMsg("Please select a valid option", 0)
+        fileswitcher()
 
 
 # short help print
@@ -408,14 +444,15 @@ def userHelp():
    :d (id ...)   Mark a task id as done, seperate multiple tasks by space
    :p (id ...)   Permanently remove a task, seperate multiple tasks by space
    :f (1-4)      Viewing level of tasks, type :f to see further explanation
+   :o            Open another existing file
    :help, :?     View this screen
    :quit, :exit  exit the application
 """)
     modeline(1)
-    input("> Press return to go back...")
+    input(" > Press return to go back...")
     taskList(targetFile)
 
 
 # execute program only if not imported as module
 if __name__ == "__main__":
-    jsonCheck()
+    jsonCheck(targetFile)
