@@ -370,6 +370,8 @@ def userInput():
         fileswitcher()
     elif choice.startswith(":n"):
         newfile(choice[2:].strip())
+    elif choice.startswith(":r"):
+        fileRemover()
     # catch user input error to prevent creation of unneccesary tasks
     elif choice.lower() in ("quit", "exit"):
         updateMsg("Did you want to quit?", 1)
@@ -424,23 +426,64 @@ def fileswitcher():
     i = 0
     for singleFile in list:
         i = i + 1
-        print("   " + str(i) + "   " + singleFile)
-    print("\n   a   abort\n")
+        idSpacing = (5 - len(str(i))) * " "
+        print("   " + str(i) + idSpacing + singleFile)
+    print("\n")
     modeline(4)
     fileSelect = input(" > ").strip()
     if fileSelect.startswith("a"):
         taskList(targetFile)
     elif int(fileSelect):
-        selection = int(fileSelect) - 1
-        if selection <= len(list):
-            fileName = list[selection]
-            targetFile = targetDir + "/" + fileName
-            taskList(targetFile)
-        else:
-            raise
+        try:
+            selection = int(fileSelect) - 1
+            if selection <= len(list):
+                fileName = list[selection]
+                targetFile = targetDir + "/" + fileName
+                taskList(targetFile)
+            else:
+                raise
+        except:
+            updateMsg("Please select a valid option", 0)
+            fileSwitcher()
     else:
         updateMsg("Please select a valid option", 0)
         fileswitcher()
+
+
+# routine to delete unused/empty files manually
+def fileRemover():
+    global fileName
+    global targetDir
+    clearScreen()
+    fileline()
+    print("   Select a file for removal\n")
+    i = 0
+    deletionList = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
+    if fileName in deletionList:
+        deletionList.remove(fileName)
+    for singleFile in deletionList:
+        i = i + 1
+        idSpacing = (5 - len(str(i))) * " "
+        print("   " + str(i) + idSpacing + singleFile)
+    print("\n")
+    modeline(2)
+    try:
+        deleteFile = input(" > ").strip().split()[0]
+        try:
+            deletionPath = targetDir + "/" + deletionList[int(deleteFile) -1]
+            try:
+                os.remove(deletionPath)
+                updateMsg("File deleted", 2)
+                taskList(targetFile)
+            except:
+                updateMsg("Could not delete file", 0)
+                taskList(targetFile)
+        except:
+            updateMsg("Please select a valid option", 0)
+            fileRemover()
+    except:
+        updateMsg("No file selected", 0)
+        taskList(targetFile)
 
 
 # create new file
@@ -454,7 +497,7 @@ def newfile(file):
     if len(file) < 1:
         print("   Please specify a new filename\n")
         modeline(5)
-        newFile = input(" > ").strip().split(" ")[0]
+        newFile = input(" > ").strip().split()[0]
         if len(newFile) > 0:
             data = {}
             data["tasks"] = []
@@ -487,6 +530,7 @@ def userHelp():
    :f (1-4)      Viewing level of tasks, type :f to see further explanation
    :o            Open another existing file
    :n (name)     Creates a new file or opens existing one if filename exists
+   :r            Remove a file from disk
    :help, :?     View this screen
    :quit, :exit  exit the application
 """)
