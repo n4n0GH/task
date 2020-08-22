@@ -142,7 +142,7 @@ def fileline():
         indicator = ""
     size = os.popen('stty size', 'r').read().split()
     padding = int(size[1]) - len(fileName) - len(indicator)
-    print(style.reverse + " " + fileName + indicator + " " * (padding - 1) + color.reset + "\n")
+    print(color.white + style.reverse + " " + fileName + indicator + " " * (padding - 1) + color.reset + "\n")
 
 
 # check if JSON exists, execute creation if not
