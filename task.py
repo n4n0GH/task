@@ -121,7 +121,13 @@ def modeline(v):
     # TODO make reflow work on terminals that support reflow by resize
     size = os.popen('stty size', 'r').read().split()
     escLength = 15
-    left = mode(v) + color.white + " "
+    actions = [":h Help | :o Open | :d Done | :p Purge | :r Remove",
+               "enter Go Back",
+               "enter Go Back | id Remove File",
+               "enter Go Back | value Set Foresight",
+               "enter Go Back | id Open File",
+               "enter Go Back | name Create New File"]
+    left = mode(v) + color.white + " " + actions[v] + " "
     right = " #" + str(idCounter-1) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
     # calculate padding and account for escape sequence color codes
@@ -439,6 +445,7 @@ def fileswitcher():
             if selection <= len(list):
                 fileName = list[selection]
                 targetFile = targetDir + "/" + fileName
+                updateMsg("Opened file", 4)
                 taskList(targetFile)
             else:
                 raise
