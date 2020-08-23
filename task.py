@@ -430,7 +430,8 @@ def fileswitcher():
     fileline()
     print("   Open available file\n")
     i = 0
-    for singleFile in list:
+    fileList = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
+    for singleFile in fileList:
         i = i + 1
         idSpacing = (5 - len(str(i))) * " "
         print("   " + str(i) + idSpacing + singleFile)
@@ -442,8 +443,8 @@ def fileswitcher():
     elif int(fileSelect):
         try:
             selection = int(fileSelect) - 1
-            if selection <= len(list):
-                fileName = list[selection]
+            if selection <= len(fileList):
+                fileName = fileList[selection]
                 targetFile = targetDir + "/" + fileName
                 updateMsg("Opened file", 4)
                 taskList(targetFile)
