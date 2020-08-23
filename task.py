@@ -224,7 +224,15 @@ def jsonWrite(n):
 # remove item from JSON file
 def jsonRemove(n):
     global idCounter
-    massRemove = n.split()
+    massRemove = []
+    # if jsonRemove was called without any parameters
+    if len(n.split()) == 0:
+        for i in range(len(data["tasks"])):
+            if data["tasks"][i]["done"] == "true":
+                massRemove.append(data["tasks"][i]["id"])
+    # otherwise move through the passed parameters
+    else:
+        massRemove = n.split()
     for j in range(len(massRemove)):
         try:
             check = int(massRemove[j])
@@ -244,12 +252,12 @@ def jsonRemove(n):
                             idCounter = 1
                         with open(targetFile, "w") as outfile:
                             json.dump(data, outfile)
-                        updateMsg("Removed task id " + str(check), 2)
                         break
                 else:
                     updateMsg("Unable to find task id " + str(check), 0)
         except ValueError:
             updateMsg("Please use the id of the task", 0)
+    updateMsg("Removed task", 2)
     taskList(targetFile)
 
 
