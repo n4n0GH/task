@@ -30,6 +30,7 @@ A planner for tasks and subtasks, categories, tags, or collaborative editing. It
 ## Features
 - Any input is regarded as a new task unless it's a specific command
 - Writes tasks and settings into a seperate json file so you could sync it with other machines
+- Handles multiple files just fine so you can seperate your task lists
 - Doesn't require you to learn weird input syntax, commands or grow additional arms to get your shit done
 - Doesn't slow you down when writing new tasks
 - Does one thing and does it well
