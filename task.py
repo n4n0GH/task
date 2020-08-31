@@ -49,6 +49,7 @@ data["tasks"] = []
 data["settings"] = []
 message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
+openTasks = 0                                       # Used to count open tasks
 unixDay = 86400                                     # Used to generate timestamp
 list = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
 
@@ -75,6 +76,7 @@ class style:
     reverse = "\033[7m"
 
 
+# creates a strikethrough effect on fonts that support it
 def strike(text):
     return "\u0336".join(text) + "\u0336"
 
@@ -128,7 +130,7 @@ def modeline(v):
                "enter Go Back | id Open File",
                "enter Go Back | name Create New File"]
     left = mode(v) + color.white + " " + actions[v] + " "
-    right = " #" + str(idCounter-1) + " ~" +\
+    right = " #" + str(openTasks) + " ~" +\
             str(data["settings"][0]["lvl"]) + " " + message
     # calculate padding and account for escape sequence color codes
     padding = int(size[1]) - len(left) - len(right) + escLength
@@ -263,6 +265,7 @@ def jsonRemove(n):
 
 # toggle item's done state instead of directly removing it
 def doneToggle(n):
+    global openTasks
     massToggle = n.split()
     for j in range(len(massToggle)):
         try:
@@ -271,9 +274,12 @@ def doneToggle(n):
                 if data["tasks"][i]["id"] == check:
                     if data["tasks"][i]["done"] == "false":
                         data["tasks"][i]["done"] = "true"
+                        if openTasks > 0:
+                            openTasks = openTasks - 1
                         updateMsg("Marked task as done", 4)
                     else:
                         data["tasks"][i]["done"] = "false"
+                        openTasks = openTasks + 1
                         updateMsg("Marked task as not done", 4)
                     with open(targetFile, "w") as outfile:
                         json.dump(data, outfile)
@@ -289,10 +295,12 @@ def doneToggle(n):
 def jsonRead(content):
     global data
     global idCounter
+    global openTasks
     group = {}
     gkey = ""
     gval = ""
     glvl = 0
+    task = 0
     with open(content) as objects:
         data = json.load(objects)
     if data["settings"][0]["idCounter"] > 1:
@@ -338,9 +346,11 @@ def jsonRead(content):
         if str(o["done"]) == "false":
             taskDescription = str(o["task"])
             doneState = '   '
+            task = task + 1
         else:
             taskDescription = strike(str(o["task"]))
             doneState = color.green + ' ✓ ' + color.reset
+        openTasks = task
         idSpacing = (5 - len(str(o["id"]))) * " "
         group[gkey][0]["item"].append(doneState + str(o["id"]) + idSpacing + taskDescription)
     # and finally print everything to the terminal
