@@ -353,17 +353,26 @@ def jsonRead(content):
         openTasks = task
         idSpacing = (5 - len(str(o["id"]))) * " "
         group[gkey][0]["item"].append(doneState + str(o["id"]) + idSpacing + taskDescription)
-    # and finally print everything to the terminal
-    # since the sortKey is useless to us, we're only interested in the dueGroups
-    # for the output, we still need to query sortKey to get proper sorting
-    for (sortKey, dueGroups) in sorted(group.items()):
-        for dueGroup in dueGroups:
-            # print only the dueGroup that matches current view level settings
-            if dueGroup["lvl"] <= data["settings"][0]["lvl"]:
-                print("   " + dueGroup["due"] + color.reset + "\n")
-                for task in dueGroup["item"]:
-                    print(task)
-                print("")
+    #print something cute if no tasks exist
+    if not group:
+        moji("empty")
+    else:
+        printCounter = 0
+        # and finally print everything to the terminal
+        # since the sortKey is useless to us, we're only interested in the dueGroups
+        # for the output, we still need to query sortKey to get proper sorting
+        for (sortKey, dueGroups) in sorted(group.items()):
+            for dueGroup in dueGroups:
+                # print only the dueGroup that matches current view level settings
+                if dueGroup["lvl"] <= data["settings"][0]["lvl"]:
+                    printCounter = printCounter + 1
+                    print("   " + dueGroup["due"] + color.reset + "\n")
+                    for task in dueGroup["item"]:
+                        print(task)
+                    print("")
+        # remind user if hidden tasks
+        if printCounter == 0:
+            moji("hidden")
 
 
 # display JSON content as task list
@@ -564,6 +573,24 @@ def userHelp():
     input(" > Press return to go back...")
     taskList(targetFile)
 
+
+# cute
+def moji(mode):
+    size = os.popen('stty size', 'r').read().split()
+    kao = ""
+    msg = ""
+    if mode == "empty":
+        kao = "(.❛ ᴗ ❛.) "
+        msg = "An empty file is nice, but how about adding some tasks?"
+    elif mode == "hidden":
+        kao = "(￣ω￣;) "
+        msg = "I know you think you\'re done but trust me there\'s more..."
+    else:
+        kao = "(╥﹏╥) "
+        msg = "You\'ll never get to see me..."
+    padding = int(size[1]) - len(kao) - len(msg)
+    halfpad = int(padding / 2)
+    print("\n\n\n\n" + " " * halfpad + kao + msg + " " * halfpad + "\n\n\n\n")
 
 # execute program only if not imported as module
 if __name__ == "__main__":
