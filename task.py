@@ -479,7 +479,7 @@ def fileswitcher():
                 raise
         except:
             updateMsg("Please select a valid option", 0)
-            fileSwitcher()
+            fileswitcher()
     else:
         updateMsg("Please select a valid option", 0)
         fileswitcher()
