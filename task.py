@@ -51,7 +51,6 @@ message = ""                                        # Feedback messages
 idCounter = 1                                       # Used to generate task id
 openTasks = 0                                       # Used to count open tasks
 unixDay = 86400                                     # Used to generate timestamp
-list = [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
 
 # set up classes for easier color coding
 class color:
@@ -75,6 +74,9 @@ class style:
     underline = "\033[4m"
     reverse = "\033[7m"
 
+# returns a list of available files
+def list():
+    return [f for f in listdir(targetDir) if isfile(join(targetDir, f))]
 
 # creates a strikethrough effect on fonts that support it
 def strike(text):
@@ -144,7 +146,7 @@ def modeline(v):
 
 # render filename above task list
 def fileline():
-    if len(list) > 1:
+    if len(list()) > 1:
         indicator = " [+]"
     else:
         indicator = ""
